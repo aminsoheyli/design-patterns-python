@@ -19,7 +19,7 @@ class Observable:
 
     def notify_observers(self):
         for observer in self.observers:
-            observer.update()
+            observer.handle()
 
 
 class DataSource(Observable):

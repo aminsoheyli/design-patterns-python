@@ -1,23 +1,32 @@
-# Implementing mediator pattern
-
+# Implementing mediator pattern using observer pattern
 
 from abc import ABC, abstractmethod
 
 
-class UIControl:
-    def __init__(self, owner):
-        self._owner = owner
-
-
-class DialogBox(ABC):
+# Observer
+class EventHandler(ABC):
     @abstractmethod
-    def changed(self, control: UIControl):
+    def handle(self, control):
         pass
 
 
+class UIControl(ABC):
+    def __init__(self):
+        self.event_handlers = []
+
+    # Attach
+    def add_event_handler(self, observer):
+        self.event_handlers.append(observer)
+
+    # Notify observers
+    def _notify_event_handlers(self):
+        for event_handler in self.event_handlers:
+            event_handler.handle(self)
+
+
 class ListBox(UIControl):
-    def __init__(self, owner: DialogBox):
-        super().__init__(owner)
+    def __init__(self):
+        super().__init__()
         self._selection = ''
 
     @property
@@ -27,12 +36,12 @@ class ListBox(UIControl):
     @selection.setter
     def selection(self, value):
         self._selection = value
-        self._owner.changed(self)
+        self._notify_event_handlers()
 
 
 class TextBox(UIControl):
-    def __init__(self, owner):
-        super().__init__(owner)
+    def __init__(self):
+        super().__init__()
         self._content = ''
 
     @property
@@ -42,12 +51,12 @@ class TextBox(UIControl):
     @content.setter
     def content(self, value):
         self._content = value
-        self._owner.changed(self)
+        self._notify_event_handlers()
 
 
 class Button(UIControl):
-    def __init__(self, owner):
-        super().__init__(owner)
+    def __init__(self):
+        super().__init__()
         self._is_enabled = False
 
     @property
@@ -57,14 +66,23 @@ class Button(UIControl):
     @is_enabled.setter
     def is_enabled(self, value):
         self._is_enabled = value
-        self._owner.changed(self)
+        self._notify_event_handlers()
 
 
-class ArticleDialogBox(DialogBox):
+class ArticleDialogBox(EventHandler):
     def __init__(self):
-        self.article_list_box = ListBox(self)
-        self.title_text_box = TextBox(self)
-        self.save_button = Button(self)
+        self.article_list_box = ListBox()
+        self.title_text_box = TextBox()
+        self.save_button = Button()
+        # Subscribe to publisher
+        self.article_list_box.add_event_handler(self)
+        self.title_text_box.add_event_handler(self)
+
+    def handle(self, control):
+        if control == self.article_list_box:
+            self.article_selected()
+        elif control == self.title_text_box:
+            self.title_changed()
 
     def simulate_user_interaction(self):
         def show_values():
@@ -77,12 +95,6 @@ class ArticleDialogBox(DialogBox):
         show_values()
         self.title_text_box.content = 'Article 2'
         show_values()
-
-    def changed(self, control: UIControl):
-        if control == self.article_list_box:
-            self.article_selected()
-        elif control == self.title_text_box:
-            self.title_changed()
 
     def article_selected(self):
         self.title_text_box.content = self.article_list_box.selection
